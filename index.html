@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>单词狗狗PK 3.0</title>
+  <link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Ccircle cx="32" cy="32" r="28" fill="%23f7be38"/%3E%3Ccircle cx="23" cy="26" r="5" fill="%23263244"/%3E%3Ccircle cx="41" cy="26" r="5" fill="%23263244"/%3E%3Cpath d="M22 41c7 6 14 6 20 0" stroke="%23263244" stroke-width="5" fill="none" stroke-linecap="round"/%3E%3C/svg%3E'>
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <section class="setup-screen" id="setupScreen" data-testid="setup-screen">
+      <div class="brand-row">
+        <div>
+          <p class="eyebrow">初中英语 · 人教版 Go for it</p>
+          <h1>单词狗狗PK 3.0</h1>
+        </div>
+        <div class="mini-dogs" aria-hidden="true">
+          <img src="assets/dog-left.png" alt="">
+          <img src="assets/dog-right.png" alt="">
+        </div>
+      </div>
+
+      <div class="setup-grid">
+        <section class="setup-panel range-panel" aria-labelledby="rangeTitle">
+          <div class="panel-title-row">
+            <h2 id="rangeTitle">单词范围</h2>
+            <span id="rangeCount" class="count-badge" data-testid="range-count">0 个</span>
+          </div>
+          <div class="term-tabs" id="termTabs" data-testid="term-tabs"></div>
+          <div class="range-actions">
+            <button class="small-btn" id="selectVisibleBtn" type="button">选择当前册</button>
+            <button class="small-btn" id="clearVisibleBtn" type="button">清空当前册</button>
+            <button class="small-btn accent" id="selectStarterBtn" type="button">推荐范围</button>
+          </div>
+          <div class="bank-list" id="bankList" data-testid="bank-list"></div>
+        </section>
+
+        <section class="setup-panel rules-panel" aria-labelledby="rulesTitle">
+          <h2 id="rulesTitle">对战规则</h2>
+          <div class="field-block">
+            <label>玩法</label>
+            <div class="segmented" role="group" aria-label="玩法">
+              <button class="active" type="button" data-play="versus">双人PK</button>
+              <button type="button" data-play="challenge">单人闯关</button>
+            </div>
+          </div>
+
+          <div class="stage-panel hidden" id="stagePanel">
+            <div class="panel-title-row">
+              <h3>剧情关卡狗</h3>
+              <span id="stageCount" class="count-badge">第 1 关</span>
+            </div>
+            <div class="chapter-tabs" id="chapterTabs" data-testid="chapter-tabs"></div>
+            <div class="stage-list" id="stageList" data-testid="stage-list"></div>
+            <p class="stage-brief" id="stageBrief"></p>
+          </div>
+
+          <div class="field-block">
+            <label>双人题型</label>
+            <div class="segmented" role="group" aria-label="双人题型">
+              <button class="active" type="button" data-mode="shared">同题抢答</button>
+              <button type="button" data-mode="independent">各自答题</button>
+            </div>
+          </div>
+
+          <div class="field-block">
+            <label for="durationInput">每局时间</label>
+            <div class="time-row">
+              <button type="button" class="time-preset" data-seconds="30">30秒</button>
+              <button type="button" class="time-preset active" data-seconds="45">45秒</button>
+              <button type="button" class="time-preset" data-seconds="60">60秒</button>
+              <input id="durationInput" data-testid="duration-input" type="number" value="45" min="15" max="180" step="5">
+            </div>
+          </div>
+
+          <div class="field-block compact-fields">
+            <label for="koInput">K.O.阈值</label>
+            <input id="koInput" data-testid="ko-input" type="number" value="100" min="60" max="160" step="10">
+          </div>
+
+          <div class="toggle-grid">
+            <label class="switch-line">
+              <input id="soundToggle" type="checkbox" checked>
+              <span>音效</span>
+            </label>
+            <label class="switch-line">
+              <input id="voiceToggle" type="checkbox" checked>
+              <span>英文朗读</span>
+            </label>
+            <label class="switch-line">
+              <input id="musicToggle" type="checkbox">
+              <span>背景音乐</span>
+            </label>
+          </div>
+
+          <div class="start-actions">
+            <button class="primary-action" id="startBtn" data-testid="start-game" type="button">开始双人PK</button>
+            <button class="secondary-action" id="fullscreenBtn" type="button">全屏</button>
+          </div>
+          <p class="status-line" id="setupStatus" data-testid="setup-status"></p>
+        </section>
+      </div>
+    </section>
+
+    <section class="battle-screen hidden" id="battleScreen" data-testid="battle-screen">
+      <header class="battle-hud">
+        <div class="team-chip left-chip">
+          <strong id="leftTeamLabel">左队</strong>
+          <span id="leftScore">0</span>
+        </div>
+        <div class="center-hud">
+          <div class="timer" id="timerText" data-testid="timer">45</div>
+          <div class="tug-wrap" aria-label="优势条">
+            <div class="tug-track">
+              <div class="tug-fill left-fill" id="leftFill"></div>
+              <div class="tug-fill right-fill" id="rightFill"></div>
+              <div class="tug-marker" id="tugMarker"></div>
+            </div>
+            <div class="tug-labels">
+              <span id="leftPercent">50%</span>
+              <span>K.O.</span>
+              <span id="rightPercent">50%</span>
+            </div>
+          </div>
+          <div class="mode-tag" id="battleModeTag">同题抢答</div>
+        </div>
+        <div class="team-chip right-chip">
+          <strong id="rightTeamLabel">右队</strong>
+          <span id="rightScore">0</span>
+        </div>
+      </header>
+
+      <main class="arena" id="arena">
+        <img class="arena-bg" src="assets/arena-bg.png" alt="">
+        <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+        <div class="collection-panel hidden" id="collectionPanel" data-testid="collection-panel">
+          <div class="collection-head">
+            <strong>星词骨牌</strong>
+            <span id="collectionCount">0/6</span>
+          </div>
+          <div class="collection-track" aria-hidden="true">
+            <div id="collectionMeter"></div>
+          </div>
+          <div class="collection-slots" id="collectionSlots"></div>
+          <p id="collectionGoal">收集六枚骨牌，修复狗狗王国词力核心。</p>
+        </div>
+
+        <div class="dog-side left-side" id="leftDogSide">
+          <div class="team-stats">
+            <span id="leftStreak">连击 0</span>
+            <span id="leftCorrect">正确 0</span>
+          </div>
+          <img class="dog dog-left" id="leftDogImg" src="assets/dog-left.png" alt="左队狗狗">
+          <div class="dog-name" id="leftDogName">红队</div>
+        </div>
+
+        <div class="dog-side right-side" id="rightDogSide">
+          <div class="team-stats">
+            <span id="rightCorrect">正确 0</span>
+            <span id="rightStreak">连击 0</span>
+          </div>
+          <img class="dog dog-right" id="rightDogImg" src="assets/dog-right.png" alt="右队狗狗">
+          <div class="dog-name" id="rightDogName">蓝队</div>
+        </div>
+      </main>
+
+      <section class="answer-floor" data-testid="answer-floor">
+        <div class="answer-lane left-lane">
+          <div class="lane-head">
+            <h3 id="leftQuestionTitle">左队题目</h3>
+            <span id="leftFeedback" class="feedback"></span>
+          </div>
+          <div class="side-question-card left-question-card" id="leftQuestionCard" data-testid="left-question-card">
+            <p id="leftQuestionMode">同题抢答</p>
+            <h2 id="leftPrompt">准备开始</h2>
+            <span id="leftHint">看中文，抢选英文。</span>
+          </div>
+          <div class="answer-grid" id="leftOptions" data-testid="left-options"></div>
+        </div>
+        <div class="battle-controls">
+          <button class="control-btn" id="pauseBtn" type="button">暂停</button>
+          <button class="control-btn" id="newRoundBtn" type="button">重开</button>
+          <button class="control-btn" id="backSetupBtn" type="button">设置</button>
+        </div>
+        <div class="answer-lane right-lane">
+          <div class="lane-head">
+            <h3 id="rightQuestionTitle">右队题目</h3>
+            <span id="rightFeedback" class="feedback"></span>
+          </div>
+          <div class="side-question-card right-question-card" id="rightQuestionCard" data-testid="right-question-card">
+            <p id="rightQuestionMode">同题抢答</p>
+            <h2 id="rightPrompt">准备开始</h2>
+            <span id="rightHint">看中文，抢选英文。</span>
+          </div>
+          <div class="answer-grid" id="rightOptions" data-testid="right-options"></div>
+        </div>
+      </section>
+    </section>
+
+    <div class="result-modal hidden" id="resultModal" data-testid="result-modal" role="dialog" aria-modal="true">
+      <div class="result-panel">
+        <p class="eyebrow">PK结果</p>
+        <h2 id="resultTitle">胜负已定</h2>
+        <div class="result-summary" id="resultSummary"></div>
+        <div class="result-actions">
+          <button class="primary-action" id="againBtn" type="button">再来一局</button>
+          <button class="secondary-action" id="resultSetupBtn" type="button">返回设置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="story-modal hidden" id="storyModal" data-testid="story-modal" role="dialog" aria-modal="true">
+      <div class="story-panel">
+        <p class="eyebrow" id="storyEyebrow">剧情闯关</p>
+        <div class="story-dog-frame">
+          <img id="storyDogImg" src="assets/stage-dogs-v3/dogs/01-gate-guard-puppy.png" alt="">
+        </div>
+        <h2 id="storyTitle">第 1 关</h2>
+        <div class="story-lines" id="storyLines"></div>
+        <div class="result-actions">
+          <button class="primary-action" id="storyStartBtn" type="button">开始挑战</button>
+          <button class="secondary-action" id="storyCancelBtn" type="button">返回设置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/data.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

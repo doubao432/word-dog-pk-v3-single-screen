@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 520" role="img" aria-label="red team dog">
+  <defs>
+    <filter id="soft">
+      <feDropShadow dx="0" dy="10" stdDeviation="6" flood-color="#3b2d20" flood-opacity=".25"/>
+    </filter>
+  </defs>
+  <ellipse cx="250" cy="462" rx="154" ry="31" fill="#67461f" opacity=".22"/>
+  <g filter="url(#soft)" stroke="#403024" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M157 295 C140 230 168 168 238 148 C315 126 392 170 400 258 C408 350 350 419 259 422 C203 424 170 371 157 295Z" fill="#f2a55a"/>
+    <path d="M151 281 C107 270 84 233 83 192 C112 202 148 226 164 259Z" fill="#e37549"/>
+    <path d="M366 254 C398 218 435 210 468 220 C460 258 431 292 386 301Z" fill="#e37549"/>
+    <path d="M186 177 C168 118 203 75 254 91 C245 136 226 165 186 177Z" fill="#dc6d43"/>
+    <path d="M331 175 C344 115 389 90 425 119 C398 154 370 174 331 175Z" fill="#dc6d43"/>
+    <path d="M193 258 C216 221 286 212 324 246 C363 281 348 348 292 371 C243 391 190 358 181 311 C177 292 181 273 193 258Z" fill="#ffd889"/>
+    <path d="M221 277 C230 258 256 258 266 277" fill="none"/>
+    <path d="M304 276 C314 258 340 259 349 278" fill="none"/>
+    <path d="M279 300 C292 291 307 296 310 311 C299 322 284 322 273 312 C273 307 275 303 279 300Z" fill="#30251d"/>
+    <path d="M245 340 C270 360 315 360 339 337" fill="none"/>
+    <path d="M196 395 L174 458" fill="none"/>
+    <path d="M321 400 L340 459" fill="none"/>
+    <path d="M203 457 H161" fill="none"/>
+    <path d="M326 458 H371" fill="none"/>
+    <path d="M404 307 C461 316 472 366 431 390 C407 367 391 342 404 307Z" fill="#f2a55a"/>
+    <path d="M428 321 C456 323 473 341 469 360" fill="none"/>
+  </g>
+  <g fill="#fff5d0" opacity=".76">
+    <path d="M194 220 c18 -30 73 -52 120 -34 -50 -3 -86 10 -120 34z"/>
+    <circle cx="232" cy="270" r="8"/>
+    <circle cx="315" cy="270" r="8"/>
+  </g>
+</svg>
