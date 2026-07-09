@@ -184,7 +184,7 @@ h1 {
 
 .challenge-setup .stage-panel {
   grid-column: 1;
-  grid-row: 2 / 8;
+  grid-row: 2 / 9;
   align-self: stretch;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -199,6 +199,7 @@ h1 {
 .challenge-setup .rules-panel > .field-block:nth-of-type(2),
 .challenge-setup .rules-panel > .field-block:nth-of-type(3),
 .challenge-setup .rules-panel > .field-block:nth-of-type(4),
+.challenge-setup .rules-panel > .field-block:nth-of-type(5),
 .challenge-setup .toggle-grid,
 .challenge-setup .start-actions,
 .challenge-setup .status-line {
@@ -618,7 +619,7 @@ input[type="number"] {
 .battle-screen {
   height: 100vh;
   display: grid;
-  grid-template-rows: clamp(70px, 12vh, 92px) minmax(190px, 1fr) clamp(210px, 31vh, 250px);
+  grid-template-rows: clamp(62px, 10vh, 82px) minmax(165px, 1fr) clamp(250px, 38vh, 305px);
   gap: 7px;
   padding: 7px;
   overflow: hidden;
@@ -945,11 +946,11 @@ input[type="number"] {
 }
 
 .left-side.knocked-out .dog {
-  animation: flyOutLeft 1.28s cubic-bezier(.3, .9, .35, 1) forwards;
+  animation: flyOutLeft var(--ko-fly-duration, .82s) cubic-bezier(.3, .9, .35, 1) forwards;
 }
 
 .right-side.knocked-out .dog {
-  animation: flyOutRight 1.28s cubic-bezier(.3, .9, .35, 1) forwards;
+  animation: flyOutRight var(--ko-fly-duration, .82s) cubic-bezier(.3, .9, .35, 1) forwards;
 }
 
 .dog-name {
@@ -973,10 +974,10 @@ input[type="number"] {
 
 .answer-lane {
   min-height: 0;
-  padding: 8px 10px 10px;
+  padding: 10px 12px 12px;
   display: grid;
-  grid-template-rows: auto minmax(54px, auto) minmax(0, 1fr);
-  gap: 6px;
+  grid-template-rows: auto minmax(66px, auto) minmax(0, 1fr);
+  gap: 8px;
 }
 
 .answer-lane h3 {
@@ -987,12 +988,28 @@ input[type="number"] {
 .feedback {
   min-width: 82px;
   min-height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 9px;
+  border-radius: 8px;
   text-align: right;
   font-weight: 1000;
 }
 
+.feedback-correct {
+  background: #dff8e7;
+  color: #0a6b3a;
+  box-shadow: inset 0 0 0 2px rgba(42, 166, 99, .28);
+}
+
+.feedback-wrong {
+  background: #ffe1df;
+  color: #9b1f22;
+  box-shadow: inset 0 0 0 2px rgba(216, 58, 53, .28);
+}
+
 .side-question-card {
-  min-height: 54px;
+  min-height: 66px;
   display: grid;
   align-content: center;
   gap: 3px;
@@ -1034,7 +1051,7 @@ input[type="number"] {
 .answer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  gap: 9px;
 }
 
 .challenge-active .right-lane {
@@ -1067,31 +1084,35 @@ input[type="number"] {
 }
 
 .answer-btn {
-  min-height: clamp(42px, 5.2vh, 58px);
-  padding: 6px 8px;
+  min-height: clamp(56px, 7vh, 78px);
+  padding: 8px 10px;
   border: 3px solid rgba(28, 33, 45, .14);
   border-radius: 8px;
   background: white;
   color: var(--ink);
-  font-size: clamp(18px, 2vw, 28px);
+  font-size: clamp(22px, 2.3vw, 32px);
   font-weight: 1000;
   line-height: 1.08;
   box-shadow: inset 0 -4px 0 rgba(43, 44, 49, .08);
 }
 
 .left-lane .answer-btn:active,
-.left-lane .answer-btn.correct-flash {
-  background: #ffe1df;
+.right-lane .answer-btn:active {
+  background: #fff4d6;
 }
 
-.right-lane .answer-btn:active,
-.right-lane .answer-btn.correct-flash {
-  background: #dcedff;
+.answer-btn.correct-flash {
+  border-color: rgba(34, 157, 88, .72);
+  background: #dff8e7;
+  color: #0a6b3a;
+  box-shadow: inset 0 -4px 0 rgba(33, 136, 76, .18), 0 0 0 3px rgba(70, 190, 115, .18);
 }
 
 .answer-btn.wrong-flash {
-  background: #f1ede4;
-  color: #8a3b32;
+  border-color: rgba(216, 58, 53, .72);
+  background: #ffe1df;
+  color: #9b1f22;
+  box-shadow: inset 0 -4px 0 rgba(164, 42, 37, .16), 0 0 0 3px rgba(216, 58, 53, .14);
   animation: shake .24s ease;
 }
 
@@ -1743,7 +1764,7 @@ input[type="number"] {
   }
 
   .battle-screen {
-    grid-template-rows: 58px minmax(120px, 1fr) 162px;
+    grid-template-rows: 54px minmax(104px, 1fr) 182px;
     gap: 5px;
     padding: 5px;
   }
@@ -1833,7 +1854,7 @@ input[type="number"] {
 
   .answer-lane {
     padding: 5px;
-    grid-template-rows: 20px 42px minmax(0, 1fr);
+    grid-template-rows: 20px 44px minmax(0, 1fr);
     gap: 4px;
   }
 
@@ -1861,7 +1882,7 @@ input[type="number"] {
   }
 
   .answer-btn {
-    min-height: 36px;
+    min-height: 40px;
     padding: 4px;
     font-size: 17px;
   }
@@ -1917,6 +1938,7 @@ input[type="number"] {
   .challenge-setup .rules-panel > .field-block:nth-of-type(2),
   .challenge-setup .rules-panel > .field-block:nth-of-type(3),
   .challenge-setup .rules-panel > .field-block:nth-of-type(4),
+  .challenge-setup .rules-panel > .field-block:nth-of-type(5),
   .challenge-setup .toggle-grid,
   .challenge-setup .start-actions,
   .challenge-setup .status-line {

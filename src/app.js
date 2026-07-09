@@ -25,6 +25,7 @@
     fullscreenBtn: $("#fullscreenBtn"),
     durationInput: $("#durationInput"),
     koInput: $("#koInput"),
+    victoryDurationInput: $("#victoryDurationInput"),
     soundToggle: $("#soundToggle"),
     voiceToggle: $("#voiceToggle"),
     musicToggle: $("#musicToggle"),
@@ -98,6 +99,7 @@
     mode: "shared",
     duration: 45,
     ko: 100,
+    victoryDuration: 2,
     phase: "setup",
     paused: false,
     timeLeft: 45,
@@ -551,6 +553,15 @@
     });
   }
 
+  function setVictoryDuration(seconds) {
+    const value = clamp(Number(seconds) || 2, 1, 8);
+    const rounded = Math.round(value * 10) / 10;
+    state.victoryDuration = rounded;
+    if (els.victoryDurationInput) {
+      els.victoryDurationInput.value = String(Number.isInteger(rounded) ? rounded : rounded.toFixed(1));
+    }
+  }
+
   function startGame() {
     hideStoryIntro();
     if (state.playKind === "challenge") {
@@ -561,6 +572,7 @@
     const items = uniqueWords(getSelectedItems());
     state.duration = clamp(Number(els.durationInput.value) || 45, 15, 180);
     state.ko = clamp(Number(els.koInput.value) || 100, 60, 160);
+    state.victoryDuration = clamp(Number(els.victoryDurationInput && els.victoryDurationInput.value) || 2, 1, 8);
     if (items.length < 8) {
       els.setupStatus.textContent = "至少选择 8 个单词再开始。";
       return;
@@ -836,7 +848,7 @@
       state.challengeProgress += 1;
       state.enemyCooldown = Math.min(getCurrentStage().enemyEvery, state.enemyCooldown + 2);
     }
-    setFeedback(side, `+${push}`);
+    setFeedback(side, `答对 +${push}`, "correct");
     dogAction(side, "attacking");
     blast(side, question.item.word, { selfHit: false });
     speak(question.item.word);
@@ -857,15 +869,12 @@
     if (state.playKind === "challenge" && side === "left") {
       state.enemyCooldown = Math.max(1, state.enemyCooldown - 2);
     }
-    setFeedback(side, "错");
+    setFeedback(side, "错误", "wrong", 1400);
     dogAction(side, "attacking");
     blast(side, firedText, { selfHit: true });
     sound.wrong();
 
-    const correctText = question.correct.label;
     const feedback = `${question.item.word} = ${question.item.meaning}`;
-    if (side === "left") els.leftFeedback.textContent = correctText.length > 8 ? "看题卡" : correctText;
-    else els.rightFeedback.textContent = correctText.length > 8 ? "看题卡" : correctText;
     setQuestionCard(side, "答案提示", question.prompt, feedback);
     updateTug();
   }
@@ -886,7 +895,7 @@
     state.players.right.correct += 1;
     state.players.right.streak += 1;
     state.tug += stage.pressure;
-    setFeedback("right", `+${stage.pressure}`);
+    setFeedback("right", `答对 +${stage.pressure}`, "correct");
     dogAction("right", "attacking");
     blast("right", pickEnemyWord(stage), { selfHit: false });
     sound.wrong();
@@ -901,12 +910,18 @@
     return words[Math.floor(Math.random() * words.length)];
   }
 
-  function setFeedback(side, text) {
+  function setFeedback(side, text, type, holdMs) {
     const target = side === "left" ? els.leftFeedback : els.rightFeedback;
+    target.classList.remove("feedback-correct", "feedback-wrong");
+    if (type === "correct") target.classList.add("feedback-correct");
+    if (type === "wrong") target.classList.add("feedback-wrong");
     target.textContent = text;
     window.setTimeout(() => {
-      if (target.textContent === text) target.textContent = "";
-    }, 900);
+      if (target.textContent === text) {
+        target.textContent = "";
+        target.classList.remove("feedback-correct", "feedback-wrong");
+      }
+    }, holdMs || 900);
   }
 
   function dogAction(side, className) {
@@ -1089,8 +1104,14 @@
     const loser = opposite(winner);
     const winnerTarget = winner === "left" ? els.leftDogSide : els.rightDogSide;
     const loserTarget = loser === "left" ? els.leftDogSide : els.rightDogSide;
-    const duration = 6400;
+    const duration = Math.round(clamp(state.victoryDuration || 2, 1, 8) * 1000);
+    const knockoutAt = Math.max(420, Math.min(duration - 560, duration * .55));
+    const flyDuration = Math.max(520, duration - knockoutAt - 110);
+    const hitCount = Math.max(3, Math.min(12, Math.round(duration / 260)));
+    const hitWindow = Math.max(260, knockoutAt - 180);
+    const hitInterval = hitWindow / hitCount;
     clearVictoryFx();
+    els.battleScreen.style.setProperty("--ko-fly-duration", `${flyDuration}ms`);
     els.battleScreen.classList.add("victory-running", `winner-${winner}`);
     winnerTarget.classList.add("victory-winner");
     loserTarget.classList.add("victory-loser");
@@ -1098,12 +1119,14 @@
     spawnVictoryBanner(winner);
 
     const words = getVictoryWords();
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < hitCount; i += 1) {
+      const delay = 160 + i * hitInterval;
+      if (delay >= knockoutAt - 60) break;
       window.setTimeout(() => {
         if (state.phase !== "victory") return;
         dogAction(winner, "attacking");
         blast(winner, words[i % words.length], { selfHit: false });
-      }, 220 + i * 310);
+      }, delay);
     }
 
     window.setTimeout(() => {
@@ -1112,7 +1135,7 @@
       winnerTarget.classList.add("victory-celebrate");
       dogAction(winner, "attacking");
       spawnVictoryKnockout(loser);
-    }, 4550);
+    }, knockoutAt);
 
     window.setTimeout(() => {
       clearVictoryFx();
@@ -1122,6 +1145,7 @@
 
   function clearVictoryFx() {
     sound.stopVictoryBark();
+    els.battleScreen.style.removeProperty("--ko-fly-duration");
     els.battleScreen.classList.remove("victory-running", "winner-left", "winner-right");
     [els.leftDogSide, els.rightDogSide].forEach((target) => {
       target.classList.remove("victory-winner", "victory-loser", "victory-celebrate", "knocked-out", "attacking", "hit", "stunned");
@@ -1304,6 +1328,9 @@
       btn.addEventListener("click", () => setDuration(btn.dataset.seconds));
     });
     els.durationInput.addEventListener("change", () => setDuration(els.durationInput.value));
+    if (els.victoryDurationInput) {
+      els.victoryDurationInput.addEventListener("change", () => setVictoryDuration(els.victoryDurationInput.value));
+    }
     els.startBtn.addEventListener("click", handleStartPress);
     els.storyStartBtn.addEventListener("click", () => {
       hideStoryIntro();
@@ -1353,6 +1380,7 @@
     selectChapter,
     selectStage,
     setDuration,
+    setVictoryDuration,
     showStoryIntro,
     hideStoryIntro,
     answerLeftCorrect() {
@@ -1394,6 +1422,9 @@
     const requestedMode = bootParams.get("mode") === "independent" ? "independent" : "shared";
     if (state.playKind !== "challenge") setMode(requestedMode);
     if (bootParams.get("duration")) setDuration(bootParams.get("duration"));
+    if (bootParams.get("victoryDuration") || bootParams.get("victory")) {
+      setVictoryDuration(bootParams.get("victoryDuration") || bootParams.get("victory"));
+    }
     if (bootParams.get("ko")) els.koInput.value = String(clamp(Number(bootParams.get("ko")) || 100, 60, 160));
     window.setTimeout(() => {
       startGame();

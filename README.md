@@ -18,6 +18,9 @@
 - 闯关战斗左侧显示 6 枚星词骨牌收集栏，用于表现“修复狗狗王国词力核心”的长期目标。
 - 设置页和战斗页已重构为白板/平板横屏单屏布局，1366x768、1024x768 不需要浏览器滚动。
 - 手机横屏战斗页做了压缩适配；手机竖屏/极窄屏保留纵向滚动兜底。
+- 答对反馈统一为绿色，答错反馈统一为红色。
+- 底部答题区已放大，按钮和题卡更适合白板点击。
+- 设置页新增“击败动画”秒数，默认 2 秒，可在 1-8 秒之间测试。
 
 ## 章节
 
@@ -84,7 +87,7 @@ https://word-dog-pk-v3-20260705-8a0612.netlify.app/
 http://127.0.0.1:5230/?autostart=1
 http://127.0.0.1:5230/?autostart=1&play=challenge&stage=1
 http://127.0.0.1:5230/?autostart=1&play=challenge&stage=1&fxdemo=correct&fxhold=1
-http://127.0.0.1:5230/?autostart=1&play=challenge&stage=1&victorydemo=left
+http://127.0.0.1:5230/?autostart=1&play=challenge&stage=1&victorydemo=left&victory=2
 ```
 
 闯关进度保存在浏览器 localStorage：
@@ -100,3 +103,5 @@ word-dog-pk-v3-challenge-unlocked
 2026-07-05 返修：狗图已用连通域规则清理。处理逻辑是保留主体最大透明组件，删除相邻格子残留的小块；原图备份保存在 `assets/stage-dogs-v3/dogs-before-component-clean-20260705/`。
 
 2026-07-07 单屏重构：设置页和战斗页改为固定视口布局，题库和关卡列表只在各自面板内滚动，浏览器页面本身不再需要滚轮下翻。Playwright 已验证 1366x768、1024x768 和 844x390 横屏战斗不产生整页滚动。
+
+2026-07-09 反馈和击败节奏返修：答对按钮和反馈改为绿色，答错按钮和反馈改为红色；底部答题区增高；击败动画默认缩短到 2 秒，并新增设置项支持 1-8 秒自定义测试。
