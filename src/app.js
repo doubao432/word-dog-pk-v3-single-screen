@@ -29,6 +29,7 @@
     soundToggle: $("#soundToggle"),
     voiceToggle: $("#voiceToggle"),
     musicToggle: $("#musicToggle"),
+    adminSpeedrunToggle: $("#adminSpeedrunToggle"),
     timerText: $("#timerText"),
     leftScore: $("#leftScore"),
     rightScore: $("#rightScore"),
@@ -100,6 +101,7 @@
     duration: 45,
     ko: 100,
     victoryDuration: 2,
+    adminSpeedrun: false,
     phase: "setup",
     paused: false,
     timeLeft: 45,
@@ -307,39 +309,55 @@
     return chapters.filter((_chapter, index) => isChapterCleared(index)).length;
   }
 
+  function getChapterProgress(chapterIndex) {
+    const chapterStages = getChapterStages(chapterIndex);
+    const completed = chapterStages.filter((stage) => getStageGlobalIndex(stage) < state.unlockedStageIndex).length;
+    return {
+      total: chapterStages.length,
+      completed: clamp(completed, 0, chapterStages.length),
+      stages: chapterStages
+    };
+  }
+
   function renderCollectionPanel() {
     if (!els.collectionPanel || !chapters.length) return;
     const challenge = state.playKind === "challenge";
     els.collectionPanel.classList.toggle("hidden", !challenge);
     if (!challenge) return;
 
-    const completed = getCompletedChapterCount();
-    els.collectionCount.textContent = `${completed}/${chapters.length}`;
-    els.collectionMeter.style.width = `${(completed / chapters.length) * 100}%`;
+    const stage = getCurrentStage();
+    const chapterIndex = getStageChapterIndex(stage);
+    const chapter = chapters[chapterIndex] || getCurrentChapter();
+    const chapterProgress = getChapterProgress(chapterIndex);
+    const chapterCompleted = getCompletedChapterCount();
+    const total = Math.max(1, chapterProgress.total);
+
+    els.collectionCount.textContent = `${chapterProgress.completed}/${chapterProgress.total}`;
+    els.collectionMeter.style.width = `${(chapterProgress.completed / total) * 100}%`;
     els.collectionSlots.innerHTML = "";
 
-    chapters.forEach((chapter, index) => {
-      const cleared = isChapterCleared(index);
-      const unlocked = isChapterUnlocked(index);
-      const current = index === state.challengeChapterIndex;
+    chapterProgress.stages.forEach((stageItem, index) => {
+      const globalIndex = getStageGlobalIndex(stageItem);
+      const collected = globalIndex < state.unlockedStageIndex;
+      const unlocked = isStageUnlocked(globalIndex);
+      const current = globalIndex === state.challengeStageIndex && !collected;
       const slot = document.createElement("div");
       slot.className = [
         "collection-slot",
-        cleared ? "collected" : "",
-        current && !cleared ? "current" : "",
+        collected ? "collected" : "",
+        current ? "current" : "",
         !unlocked ? "locked" : ""
       ].filter(Boolean).join(" ");
-      slot.title = unlocked ? `${chapter.name} · ${chapter.rewardName}` : "未解锁骨牌";
-      slot.innerHTML = cleared || (unlocked && current)
-        ? `<img src="${escapeHtml(chapter.rewardImage)}" alt="${escapeHtml(chapter.rewardName)}"><span>${cleared ? "已获得" : "寻找中"}</span>`
-        : `<b>?</b><span>未发现</span>`;
+      slot.title = unlocked ? `? ${stageItem.order} ? ? ${stageItem.rewardName}` : "?????";
+      slot.innerHTML = collected || current
+        ? `<img src="${escapeHtml(chapter.rewardImage)}" alt="${escapeHtml(chapter.rewardName)}"><span>${collected ? "???" : `?${index + 1}?`}</span>`
+        : `<b>?</b><span>???</span>`;
       els.collectionSlots.appendChild(slot);
     });
 
-    const chapter = getCurrentChapter();
-    els.collectionGoal.textContent = completed >= chapters.length
-      ? "六枚星词骨牌集齐，狗狗王国词力核心已修复。"
-      : `目标：收集六枚星词骨牌。当前寻找：${chapter ? chapter.rewardName : "下一枚骨牌"}。`;
+    els.collectionGoal.textContent = chapterCompleted >= chapters.length
+      ? "?????????????????????"
+      : `?????${chapter ? chapter.rewardName : "????"}????????????`;
   }
 
   function syncChapterToCurrentStage() {
@@ -349,7 +367,7 @@
   function selectChapter(index) {
     const requested = clamp(index, 0, Math.max(0, chapters.length - 1));
     if (state.playKind === "challenge" && !isChapterUnlocked(requested)) {
-      els.setupStatus.textContent = "先通关前面的章节，才能进入这一区域。";
+      els.setupStatus.textContent = "??????????????????";
       return;
     }
     state.challengeChapterIndex = requested;
@@ -371,12 +389,12 @@
     els.setupScreen.classList.toggle("challenge-setup", state.playKind === "challenge");
 
     const terms = [
-      ["all", "全部"],
-      ["7-上册", "七上"],
-      ["7-下册", "七下"],
-      ["8-上册", "八上"],
-      ["8-下册", "八下"],
-      ["9-全一册", "九年级"]
+      ["all", "??"],
+      ["7-??", "??"],
+      ["7-??", "??"],
+      ["8-??", "??"],
+      ["8-??", "??"],
+      ["9-???", "???"]
     ];
 
     els.termTabs.innerHTML = "";
@@ -398,7 +416,7 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = `bank-btn ${state.selectedBankIds.has(bank.id) ? "selected" : ""}`;
-      btn.innerHTML = `<strong>${escapeHtml(bank.label)}</strong><span>${escapeHtml(bank.theme)} · ${bank.items.length}词</span>`;
+      btn.innerHTML = `<strong>${escapeHtml(bank.label)}</strong><span>${escapeHtml(bank.theme)} ? ${bank.items.length}?</span>`;
       btn.addEventListener("click", () => {
         if (state.selectedBankIds.has(bank.id)) state.selectedBankIds.delete(bank.id);
         else state.selectedBankIds.add(bank.id);
@@ -407,7 +425,7 @@
       els.bankList.appendChild(btn);
     });
 
-    els.rangeCount.textContent = `${getSelectedItems().length} 个`;
+    els.rangeCount.textContent = `${getSelectedItems().length} ?`;
     renderStages();
   }
 
@@ -418,7 +436,7 @@
     if (els.chapterTabs) els.chapterTabs.innerHTML = "";
     els.stageList.innerHTML = "";
     if (!hasStages) {
-      els.stageBrief.textContent = "还没有关卡素材。";
+      els.stageBrief.textContent = "????????";
       return;
     }
 
@@ -435,7 +453,7 @@
           isChapterCleared(index) ? "cleared" : ""
         ].filter(Boolean).join(" ");
         btn.innerHTML = `<strong>${chapter.order}</strong><span>${escapeHtml(locked ? "???" : chapter.mapLabel || chapter.name)}</span>`;
-        btn.title = locked ? "未解锁章节" : `${chapter.name} · ${chapter.subtitle}`;
+        btn.title = locked ? "?????" : `${chapter.name} ? ${chapter.subtitle}`;
         btn.addEventListener("click", () => selectChapter(index));
         els.chapterTabs.appendChild(btn);
       });
@@ -444,7 +462,7 @@
     getChapterStages().forEach((stage) => {
       const index = getStageGlobalIndex(stage);
       const locked = state.playKind === "challenge" && !isStageUnlocked(index);
-      const statusText = locked ? "未解锁" : index < state.unlockedStageIndex ? "已通关" : "可挑战";
+      const statusText = locked ? "???" : index < state.unlockedStageIndex ? "???" : "???";
       const btn = document.createElement("button");
       btn.type = "button";
       btn.disabled = locked;
@@ -458,16 +476,16 @@
       btn.innerHTML = locked
         ? `
           <div class="stage-mystery" aria-hidden="true">?</div>
-          <span class="stage-meta">第 ${stage.order}/${stages.length} 关 · ???</span>
-          <strong>未发现的关卡狗</strong>
-          <em>通关前一关后出现</em>
+          <span class="stage-meta">? ${stage.order}/${stages.length} ? ? ???</span>
+          <strong>???????</strong>
+          <em>????????</em>
           <span class="stage-lock">${escapeHtml(statusText)}</span>
         `
         : `
           <img src="${escapeHtml(stage.dogImage)}" alt="${escapeHtml(stage.name)}">
-          <span class="stage-meta">第 ${stage.order}/${stages.length} 关 · ${escapeHtml(stage.chapterName)} · ${escapeHtml(stage.subtitle)}</span>
+          <span class="stage-meta">? ${stage.order}/${stages.length} ? ? ${escapeHtml(stage.chapterName)} ? ${escapeHtml(stage.subtitle)}</span>
           <strong>${escapeHtml(stage.name)}</strong>
-          <em>${stage.target} 题通关 · ${stage.duration} 秒</em>
+          <em>${stage.target} ??? ? ${stage.duration} ?</em>
           <span class="stage-lock">${escapeHtml(statusText)}</span>
         `;
       btn.addEventListener("click", () => selectStage(index));
@@ -476,11 +494,11 @@
 
     const stage = getCurrentStage();
     const chapter = getCurrentChapter();
-    els.stageCount.textContent = `第 ${stage.order}/${stages.length} 关`;
+    els.stageCount.textContent = `? ${stage.order}/${stages.length} ?`;
     els.stageBrief.textContent = state.playKind === "challenge"
-      ? `${chapter ? `${chapter.name}：${chapter.intro} ` : ""}当前对手：${stage.name}。${stage.tip}（已开放到第 ${Math.min(state.unlockedStageIndex + 1, stages.length)} 关）`
+      ? `${chapter ? `${chapter.name}?${chapter.intro} ` : ""}?????${stage.name}?${stage.tip}?????? ${Math.min(state.unlockedStageIndex + 1, stages.length)} ??`
       : "";
-    els.startBtn.textContent = state.playKind === "challenge" ? `挑战${stage.name}` : "开始双人PK";
+    els.startBtn.textContent = state.playKind === "challenge" ? `??${stage.name}` : "????PK";
   }
 
   function getVisibleBanks() {
@@ -522,7 +540,7 @@
   function selectStage(index) {
     const requested = clamp(index, 0, Math.max(0, stages.length - 1));
     if (state.playKind === "challenge" && !isStageUnlocked(requested)) {
-      els.setupStatus.textContent = "先打败前一关，才能挑战后面的关卡。";
+      els.setupStatus.textContent = "?????????????????";
       return;
     }
     state.challengeStageIndex = requested;
@@ -562,6 +580,14 @@
     }
   }
 
+  function setAdminSpeedrun(enabled) {
+    state.adminSpeedrun = Boolean(enabled);
+    if (els.adminSpeedrunToggle) els.adminSpeedrunToggle.checked = state.adminSpeedrun;
+    if (state.adminSpeedrun && els.setupStatus) {
+      els.setupStatus.textContent = "??????????????????????";
+    }
+  }
+
   function startGame() {
     hideStoryIntro();
     if (state.playKind === "challenge") {
@@ -574,7 +600,7 @@
     state.ko = clamp(Number(els.koInput.value) || 100, 60, 160);
     state.victoryDuration = clamp(Number(els.victoryDurationInput && els.victoryDurationInput.value) || 2, 1, 8);
     if (items.length < 8) {
-      els.setupStatus.textContent = "至少选择 8 个单词再开始。";
+      els.setupStatus.textContent = "???? 8 ???????";
       return;
     }
 
@@ -601,7 +627,7 @@
     els.battleScreen.classList.remove("hidden");
     clearVictoryFx();
     configureBattleScene();
-    els.pauseBtn.textContent = "暂停";
+    els.pauseBtn.textContent = "??";
     els.battleModeTag.textContent = getBattleModeText();
     els.setupStatus.textContent = "";
 
@@ -635,17 +661,17 @@
     const stage = getCurrentStage();
     if (!stage || !els.storyModal) return;
     const chapter = getCurrentChapter();
-    els.storyEyebrow.textContent = chapter ? `${chapter.name} · ${chapter.subtitle}` : "剧情闯关";
+    els.storyEyebrow.textContent = chapter ? `${chapter.name} ? ${chapter.subtitle}` : "????";
     els.storyDogImg.src = stage.dogImage;
     els.storyDogImg.alt = stage.name;
-    els.storyTitle.textContent = `第 ${stage.order} 关：${stage.name}`;
+    els.storyTitle.textContent = `? ${stage.order} ??${stage.name}`;
     const lines = stage.introLines && stage.introLines.length
       ? stage.introLines
-      : [`${stage.chapterName} · ${stage.subtitle}`, stage.tip, `答对 ${stage.target} 题或提前 K.O.。`];
+      : [`${stage.chapterName} ? ${stage.subtitle}`, stage.tip, `?? ${stage.target} ???? K.O.?`];
     els.storyLines.innerHTML = lines
       .concat([
-        chapter ? `章节目标：夺回${chapter.rewardName}` : "",
-        `本关目标：${stage.target} 题 · ${stage.duration} 秒 · 奖励：${stage.rewardName}`
+        chapter ? `???????${chapter.rewardName}` : "",
+        `?????${stage.target} ? ? ${stage.duration} ? ? ???${stage.rewardName}`
       ].filter(Boolean))
       .map((line) => `<p>${escapeHtml(line)}</p>`)
       .join("");
@@ -676,7 +702,7 @@
   function togglePause() {
     if (state.phase !== "battle") return;
     state.paused = !state.paused;
-    els.pauseBtn.textContent = state.paused ? "继续" : "暂停";
+    els.pauseBtn.textContent = state.paused ? "??" : "??";
     renderQuestions();
   }
 
@@ -695,10 +721,10 @@
   function updateScores() {
     els.leftScore.textContent = state.players.left.score;
     els.rightScore.textContent = state.players.right.score;
-    els.leftCorrect.textContent = `正确 ${state.players.left.correct}`;
-    els.rightCorrect.textContent = `正确 ${state.players.right.correct}`;
-    els.leftStreak.textContent = `连击 ${state.players.left.streak}`;
-    els.rightStreak.textContent = `连击 ${state.players.right.streak}`;
+    els.leftCorrect.textContent = `?? ${state.players.left.correct}`;
+    els.rightCorrect.textContent = `?? ${state.players.right.correct}`;
+    els.leftStreak.textContent = `?? ${state.players.left.streak}`;
+    els.rightStreak.textContent = `?? ${state.players.right.streak}`;
   }
 
   function updateTug() {
@@ -721,19 +747,19 @@
     }
     if (state.mode === "shared") {
       const q = state.sharedQuestion;
-      els.leftQuestionTitle.textContent = "左队抢答";
-      els.rightQuestionTitle.textContent = "右队抢答";
-      setQuestionCard("left", "同题抢答", q.prompt, state.paused ? "已暂停" : getQuestionHint(q));
-      setQuestionCard("right", "同题抢答", q.prompt, state.paused ? "已暂停" : getQuestionHint(q));
+      els.leftQuestionTitle.textContent = "????";
+      els.rightQuestionTitle.textContent = "????";
+      setQuestionCard("left", "????", q.prompt, state.paused ? "???" : getQuestionHint(q));
+      setQuestionCard("right", "????", q.prompt, state.paused ? "???" : getQuestionHint(q));
       renderOptions("left", q);
       renderOptions("right", q);
     } else {
       const leftQ = state.laneQuestion.left;
       const rightQ = state.laneQuestion.right;
-      els.leftQuestionTitle.textContent = "左队题目";
-      els.rightQuestionTitle.textContent = "右队题目";
-      setQuestionCard("left", "各自答题", leftQ.prompt, state.paused ? "已暂停" : getQuestionHint(leftQ));
-      setQuestionCard("right", "各自答题", rightQ.prompt, state.paused ? "已暂停" : getQuestionHint(rightQ));
+      els.leftQuestionTitle.textContent = "????";
+      els.rightQuestionTitle.textContent = "????";
+      setQuestionCard("left", "????", leftQ.prompt, state.paused ? "???" : getQuestionHint(leftQ));
+      setQuestionCard("right", "????", rightQ.prompt, state.paused ? "???" : getQuestionHint(rightQ));
       renderOptions("left", leftQ);
       renderOptions("right", rightQ);
     }
@@ -742,10 +768,10 @@
   function renderChallengeQuestions() {
     const stage = getCurrentStage();
     const q = state.sharedQuestion;
-    els.leftQuestionTitle.textContent = "红队挑战";
-    els.rightQuestionTitle.textContent = "关卡狗";
-    setQuestionCard("left", `闯关 第 ${stage.order} 关`, q.prompt, state.paused ? "已暂停" : getQuestionHint(q));
-    setQuestionCard("right", stage.name, `${state.challengeProgress}/${stage.target} 题通关`, stage.tip);
+    els.leftQuestionTitle.textContent = "????";
+    els.rightQuestionTitle.textContent = "???";
+    setQuestionCard("left", `?? ? ${stage.order} ?`, q.prompt, state.paused ? "???" : getQuestionHint(q));
+    setQuestionCard("right", stage.name, `${state.challengeProgress}/${stage.target} ???`, stage.tip);
     renderOptions("left", q);
     renderEnemyPanel(stage);
     els.battleModeTag.textContent = getBattleModeText();
@@ -755,9 +781,9 @@
     els.rightOptions.innerHTML = `
       <div class="enemy-status">
         <strong>${escapeHtml(stage.name)}</strong>
-        <span>下一次反击：${Math.max(0, state.enemyCooldown)} 秒</span>
-        <span>已反击：${state.enemyAttacks} 次</span>
-        <span>目标：答对 ${stage.target} 题</span>
+        <span>??????${Math.max(0, state.enemyCooldown)} ?</span>
+        <span>????${state.enemyAttacks} ?</span>
+        <span>????? ${stage.target} ?</span>
       </div>
     `;
   }
@@ -773,7 +799,7 @@
 
   function getQuestionHint(question) {
     if (!question) return "";
-    return question.direction === "meaning-to-word" ? "看中文，抢选英文。" : "看英文，抢选中文。";
+    return question.direction === "meaning-to-word" ? "?????????" : "?????????";
   }
 
   function renderOptions(side, question) {
@@ -793,7 +819,7 @@
   function answer(side, option, button) {
     if (state.phase !== "battle" || state.paused || state.locked[side]) return;
     const question = state.mode === "shared" ? state.sharedQuestion : state.laneQuestion[side];
-    const isCorrect = option.value === question.correct.value;
+    const isCorrect = state.adminSpeedrun || option.value === question.correct.value;
     state.locked[side] = true;
 
     if (isCorrect) {
@@ -848,7 +874,7 @@
       state.challengeProgress += 1;
       state.enemyCooldown = Math.min(getCurrentStage().enemyEvery, state.enemyCooldown + 2);
     }
-    setFeedback(side, `答对 +${push}`, "correct");
+    setFeedback(side, `?? +${push}`, "correct");
     dogAction(side, "attacking");
     blast(side, question.item.word, { selfHit: false });
     speak(question.item.word);
@@ -869,13 +895,13 @@
     if (state.playKind === "challenge" && side === "left") {
       state.enemyCooldown = Math.max(1, state.enemyCooldown - 2);
     }
-    setFeedback(side, "错误", "wrong", 1400);
+    setFeedback(side, "??", "wrong", 1400);
     dogAction(side, "attacking");
     blast(side, firedText, { selfHit: true });
     sound.wrong();
 
     const feedback = `${question.item.word} = ${question.item.meaning}`;
-    setQuestionCard(side, "答案提示", question.prompt, feedback);
+    setQuestionCard(side, "????", question.prompt, feedback);
     updateTug();
   }
 
@@ -895,7 +921,7 @@
     state.players.right.correct += 1;
     state.players.right.streak += 1;
     state.tug += stage.pressure;
-    setFeedback("right", `答对 +${stage.pressure}`, "correct");
+    setFeedback("right", `?? +${stage.pressure}`, "correct");
     dogAction("right", "attacking");
     blast("right", pickEnemyWord(stage), { selfHit: false });
     sound.wrong();
@@ -1001,7 +1027,7 @@
     const burst = document.createElement("div");
     burst.className = `impact-burst ${side} ${bad ? "bad" : ""}`;
     if (holdFx) burst.classList.add("fx-hold");
-    burst.textContent = bad ? "错误!" : "击中!";
+    burst.textContent = bad ? "??!" : "??!";
     burst.style.left = `${point.x}px`;
     burst.style.top = `${point.y + 34}px`;
     els.fxLayer.appendChild(burst);
@@ -1062,14 +1088,14 @@
       showChallengeResult(reason, winner);
       return;
     }
-    els.againBtn.textContent = "再来一局";
-    els.resultSetupBtn.textContent = "返回设置";
-    const title = winner === "draw" ? "平局" : `${getSideDisplayName(winner)}胜利`;
+    els.againBtn.textContent = "????";
+    els.resultSetupBtn.textContent = "????";
+    const title = winner === "draw" ? "??" : `${getSideDisplayName(winner)}??`;
     els.resultTitle.textContent = reason === "ko" && winner !== "draw" ? `K.O. ${title}` : title;
     els.resultSummary.innerHTML = [
-      `红队：${state.players.left.score}分，正确 ${state.players.left.correct}，错误 ${state.players.left.wrong}`,
-      `蓝队：${state.players.right.score}分，正确 ${state.players.right.correct}，错误 ${state.players.right.wrong}`,
-      `优势值：${state.tug < 0 ? "红队" : state.tug > 0 ? "蓝队" : "双方"} ${Math.abs(Math.round(state.tug))}`
+      `???${state.players.left.score}???? ${state.players.left.correct}??? ${state.players.left.wrong}`,
+      `???${state.players.right.score}???? ${state.players.right.correct}??? ${state.players.right.wrong}`,
+      `????${state.tug < 0 ? "??" : state.tug > 0 ? "??" : "??"} ${Math.abs(Math.round(state.tug))}`
     ].map((line) => `<div>${escapeHtml(line)}</div>`).join("");
     els.resultModal.classList.remove("hidden");
   }
@@ -1082,21 +1108,21 @@
     if (success) unlockNextStage();
     renderCollectionPanel();
     els.resultTitle.textContent = success
-      ? reason === "ko" ? `K.O. ${stage.name}` : `${stage.name} 被击败`
-      : `${stage.name} 挑战失败`;
+      ? reason === "ko" ? `K.O. ${stage.name}` : `${stage.name} ???`
+      : `${stage.name} ????`;
     const summary = [
-      `关卡：第 ${stage.order}/${stages.length} 关 · ${stage.chapterName} · ${stage.subtitle}`,
-      `答题进度：${state.challengeProgress}/${stage.target} 题`,
-      `红队：${state.players.left.score}分，正确 ${state.players.left.correct}，错误 ${state.players.left.wrong}`,
-      `关卡狗反击：${state.enemyAttacks} 次`,
-      `优势值：${state.tug < 0 ? "红队" : state.tug > 0 ? stage.name : "持平"} ${Math.abs(Math.round(state.tug))}`,
-      success ? `获得：${stage.rewardName}` : "建议重试本关，先稳住前 3 题连击。",
+      `???? ${stage.order}/${stages.length} ? ? ${stage.chapterName} ? ${stage.subtitle}`,
+      `?????${state.challengeProgress}/${stage.target} ?`,
+      `???${state.players.left.score}???? ${state.players.left.correct}??? ${state.players.left.wrong}`,
+      `??????${state.enemyAttacks} ?`,
+      `????${state.tug < 0 ? "??" : state.tug > 0 ? stage.name : "??"} ${Math.abs(Math.round(state.tug))}`,
+      success ? `???${stage.rewardName}` : "??????????? 3 ????",
       success && stage.winLines && stage.winLines.length ? stage.winLines.join(" / ") : "",
-      success && nextStage ? `下一关：${nextStage.chapterName} · ${nextStage.name}` : success ? "已完成当前 3.0 剧情闯关版本。" : ""
+      success && nextStage ? `????${nextStage.chapterName} ? ${nextStage.name}` : success ? "????? 3.0 ???????" : ""
     ].filter(Boolean);
     els.resultSummary.innerHTML = summary.map((line) => `<div>${escapeHtml(line)}</div>`).join("");
-    els.againBtn.textContent = success && hasNext ? "下一关" : success ? "再挑战" : "重试本关";
-    els.resultSetupBtn.textContent = "返回设置";
+    els.againBtn.textContent = success && hasNext ? "???" : success ? "???" : "????";
+    els.resultSetupBtn.textContent = "????";
     els.resultModal.classList.remove("hidden");
   }
 
@@ -1158,7 +1184,7 @@
   function spawnVictoryBanner(winner) {
     const node = document.createElement("div");
     node.className = `victory-banner ${winner}`;
-    node.innerHTML = `<strong>${escapeHtml(getSideDisplayName(winner))} WIN!</strong><span>单词连环汪汪炮</span>`;
+    node.innerHTML = `<strong>${escapeHtml(getSideDisplayName(winner))} WIN!</strong><span>???????</span>`;
     els.fxLayer.appendChild(node);
   }
 
@@ -1268,30 +1294,30 @@
 
   function getSideDisplayName(side) {
     if (state.playKind === "challenge" && side === "right") return getCurrentStage().name;
-    return side === "left" ? "红队" : "蓝队";
+    return side === "left" ? "??" : "??";
   }
 
   function getBattleModeText() {
-    if (state.playKind !== "challenge") return state.mode === "shared" ? "同题抢答" : "各自答题";
+    if (state.playKind !== "challenge") return state.mode === "shared" ? "????" : "????";
     const stage = getCurrentStage();
-    return `闯关 第 ${stage.order} 关 · ${state.challengeProgress}/${stage.target}`;
+    return `?? ? ${stage.order} ? ? ${state.challengeProgress}/${stage.target}`;
   }
 
   function configureBattleScene() {
     const challenge = state.playKind === "challenge";
     const stage = getCurrentStage();
     els.battleScreen.classList.toggle("challenge-active", challenge);
-    els.leftTeamLabel.textContent = challenge ? "红队" : "左队";
-    els.rightTeamLabel.textContent = challenge ? "关卡狗" : "右队";
+    els.leftTeamLabel.textContent = challenge ? "??" : "??";
+    els.rightTeamLabel.textContent = challenge ? "???" : "??";
     const leftNormal = "assets/dog-left.png";
     const rightNormal = challenge && stage ? stage.dogImage : "assets/dog-right.png";
     const rightFlip = challenge && stage ? Number(stage.rightFlip ?? -1) : 1;
     setDogImageSources("left", leftNormal);
     setDogImageSources("right", rightNormal);
     els.rightDogImg.style.setProperty("--right-flip", String(rightFlip));
-    els.leftDogName.textContent = "红队";
-    els.rightDogName.textContent = challenge && stage ? stage.name : "蓝队";
-    els.rightDogImg.alt = challenge && stage ? stage.name : "右队狗狗";
+    els.leftDogName.textContent = "??";
+    els.rightDogName.textContent = challenge && stage ? stage.name : "??";
+    els.rightDogImg.alt = challenge && stage ? stage.name : "????";
     renderCollectionPanel();
   }
 
@@ -1369,6 +1395,11 @@
     els.musicToggle.addEventListener("change", () => {
       if (state.phase === "battle") sound.startMusic();
     });
+    if (els.adminSpeedrunToggle) {
+      els.adminSpeedrunToggle.addEventListener("change", () => {
+        setAdminSpeedrun(els.adminSpeedrunToggle.checked);
+      });
+    }
   }
 
   window.wordDogTest = {
@@ -1381,6 +1412,7 @@
     selectStage,
     setDuration,
     setVictoryDuration,
+    setAdminSpeedrun,
     showStoryIntro,
     hideStoryIntro,
     answerLeftCorrect() {
@@ -1414,6 +1446,9 @@
   wireEvents();
   renderSetup();
   const bootParams = new URLSearchParams(window.location.search);
+  if (bootParams.get("admin") === "1" || bootParams.get("speedrun") === "1") {
+    setAdminSpeedrun(true);
+  }
   if (bootParams.get("autostart") === "1") {
     if (bootParams.get("play") === "challenge" || bootParams.get("challenge") === "1") {
       setPlayKind("challenge");
@@ -1430,7 +1465,7 @@
       startGame();
       if (bootParams.get("pause") === "1") {
         state.paused = true;
-        els.pauseBtn.textContent = "继续";
+        els.pauseBtn.textContent = "??";
         renderQuestions();
       }
       if (bootParams.get("fxdemo") === "correct") {

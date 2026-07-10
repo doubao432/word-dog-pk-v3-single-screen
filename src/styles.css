@@ -214,6 +214,13 @@ h1 {
 .challenge-setup .toggle-grid,
 .challenge-setup .start-actions {
   display: grid;
+}
+
+.challenge-setup .toggle-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.challenge-setup .start-actions {
   grid-template-columns: 1fr;
 }
 
@@ -390,6 +397,14 @@ input[type="number"] {
   width: 20px;
   height: 20px;
   accent-color: var(--green);
+}
+
+.admin-switch {
+  background: #fff1cc;
+}
+
+.admin-switch input {
+  accent-color: #d76f2a;
 }
 
 .stage-panel {
@@ -1704,13 +1719,14 @@ input[type="number"] {
 
   .challenge-setup .switch-line {
     min-height: 26px;
-    padding: 0 6px;
-    font-size: 11px;
+    padding: 0 3px;
+    gap: 3px;
+    font-size: 10px;
   }
 
   .challenge-setup .switch-line input {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   .stage-panel {
@@ -1948,6 +1964,10 @@ input[type="number"] {
 
   .challenge-setup .rules-panel > .field-block:nth-of-type(1) label {
     display: block;
+  }
+
+  .challenge-setup .toggle-grid {
+    grid-template-columns: 1fr;
   }
 
   .battle-screen {
